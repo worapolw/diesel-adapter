@@ -23,20 +23,44 @@ pub type Connection = diesel::SqliteConnection;
 
 type Pool = PooledConnection<ConnectionManager<Connection>>;
 
-#[cfg(feature = "postgres")]
+#[cfg(all(feature = "postgres", not(feature = "uuid")))]
 pub fn new(conn: Result<Pool>) -> Result<usize> {
     conn.and_then(|mut conn| {
         sql_query(format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
                     id SERIAL PRIMARY KEY,
-                    ptype VARCHAR NOT NULL,
-                    v0 VARCHAR NOT NULL,
-                    v1 VARCHAR NOT NULL,
-                    v2 VARCHAR NOT NULL,
-                    v3 VARCHAR NOT NULL,
-                    v4 VARCHAR NOT NULL,
-                    v5 VARCHAR NOT NULL,
+                    ptype TEXT NOT NULL,
+                    v0 TEXT NOT NULL,
+                    v1 TEXT NOT NULL,
+                    v2 TEXT NOT NULL,
+                    v3 TEXT NOT NULL,
+                    v4 TEXT NOT NULL,
+                    v5 TEXT NOT NULL,
+                    CONSTRAINT unique_key_diesel_adapter UNIQUE(ptype, v0, v1, v2, v3, v4, v5)
+                );
+            "#,
+            TABLE_NAME
+        ))
+        .execute(&mut conn)
+        .map_err(|err| AdapterError(Box::new(Error::DieselError(err))).into())
+    })
+}
+
+#[cfg(all(feature = "postgres", feature = "uuid"))]
+pub fn new(conn: Result<Pool>) -> Result<usize> {
+    conn.and_then(|mut conn| {
+        sql_query(format!(
+            r#"
+                CREATE TABLE IF NOT EXISTS {} (
+                    id UUID PRIMARY KEY DEFAULT GEN_RANDOM_UUID(),
+                    ptype TEXT NOT NULL,
+                    v0 TEXT NOT NULL,
+                    v1 TEXT NOT NULL,
+                    v2 TEXT NOT NULL,
+                    v3 TEXT NOT NULL,
+                    v4 TEXT NOT NULL,
+                    v5 TEXT NOT NULL,
                     CONSTRAINT unique_key_diesel_adapter UNIQUE(ptype, v0, v1, v2, v3, v4, v5)
                 );
             "#,
@@ -133,7 +157,7 @@ pub fn remove_policies(mut conn: Pool, pt: &str, rules: Vec<Vec<String>>) -> Res
                 .and(v5.eq(&rule[5]));
 
             match diesel::delete(casbin_rule.filter(filter)).execute(conn) {
-                Ok(n) if n == 1 => continue,
+                Ok(1) => continue,
                 _ => return Err(DieselError::RollbackTransaction),
             }
         }

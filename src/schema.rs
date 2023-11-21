@@ -1,3 +1,4 @@
+#[cfg(not(feature = "postgres"))]
 table! {
     casbin_rule (id) {
         id -> Integer,
@@ -8,5 +9,33 @@ table! {
         v3 -> Varchar,
         v4 -> Varchar,
         v5 -> Varchar,
+    }
+}
+
+#[cfg(all(feature = "postgres", feature = "uuid"))]
+table! {
+    casbin_rule (id) {
+        id -> Uuid,
+        ptype -> Text,
+        v0 -> Text,
+        v1 -> Text,
+        v2 -> Text,
+        v3 -> Text,
+        v4 -> Text,
+        v5 -> Text,
+    }
+}
+
+#[cfg(all(not(feature = "uuid"), feature = "postgres"))]
+table! {
+    casbin_rule (id) {
+        id -> Integer,
+        ptype -> Text,
+        v0 -> Text,
+        v1 -> Text,
+        v2 -> Text,
+        v3 -> Text,
+        v4 -> Text,
+        v5 -> Text,
     }
 }
