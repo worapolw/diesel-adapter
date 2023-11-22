@@ -71,7 +71,7 @@ pub fn new(conn: Result<Pool>) -> Result<usize> {
     })
 }
 
-#[cfg(feature = "mysql")]
+#[cfg(all(feature = "mysql", not(feature = "uuid")))]
 pub fn new(conn: Result<Pool>) -> Result<usize> {
     conn.and_then(|mut conn| {
         sql_query(format!(
@@ -96,7 +96,32 @@ pub fn new(conn: Result<Pool>) -> Result<usize> {
     })
 }
 
-#[cfg(feature = "sqlite")]
+#[cfg(all(feature = "mysql", feature = "uuid"))]
+pub fn new(conn: Result<Pool>) -> Result<usize> {
+    conn.and_then(|mut conn| {
+        sql_query(format!(
+            r#"
+                CREATE TABLE IF NOT EXISTS {} (
+                    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+                    ptype VARCHAR(12) NOT NULL,
+                    v0 VARCHAR(128) NOT NULL,
+                    v1 VARCHAR(128) NOT NULL,
+                    v2 VARCHAR(128) NOT NULL,
+                    v3 VARCHAR(128) NOT NULL,
+                    v4 VARCHAR(128) NOT NULL,
+                    v5 VARCHAR(128) NOT NULL,
+                    PRIMARY KEY(id),
+                    CONSTRAINT unique_key_diesel_adapter UNIQUE(ptype, v0, v1, v2, v3, v4, v5)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+            "#,
+            TABLE_NAME
+        ))
+        .execute(&mut conn)
+        .map_err(|err| AdapterError(Box::new(Error::DieselError(err))).into())
+    })
+}
+
+#[cfg(all(feature = "sqlite", not(feature = "uuid")))]
 pub fn new(conn: Result<Pool>) -> Result<usize> {
     conn.and_then(|mut conn| {
         sql_query(format!(
