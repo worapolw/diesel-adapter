@@ -121,7 +121,7 @@ pub fn new(conn: Result<Pool>) -> Result<usize> {
     })
 }
 
-#[cfg(all(feature = "sqlite", not(feature = "uuid")))]
+#[cfg(feature = "sqlite")]
 pub fn new(conn: Result<Pool>) -> Result<usize> {
     conn.and_then(|mut conn| {
         sql_query(format!(

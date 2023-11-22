@@ -3,7 +3,7 @@ use super::schema::casbin_rule;
 #[cfg(feature = "uuid")]
 use uuid::Uuid;
 
-#[cfg(not(feature = "uuid"))]
+#[cfg(any(not(feature = "uuid"), feature = "sqlite"))]
 #[derive(Queryable, Identifiable)]
 #[diesel(table_name = casbin_rule)]
 pub(crate) struct CasbinRule {
